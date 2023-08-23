@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import Codes from 'src/entities/codes.entity';
 import { Repository } from 'typeorm';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +16,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectRepository(Codes)
     private code_repository: Repository<Codes>,
+    private readonly mailerService: MailerService,
   ) {}
   async register(registerDto: RegisterDto) {
     const user = await this.usersService.findUserByEmail(registerDto.email);
@@ -22,6 +24,20 @@ export class AuthService {
       throw new HttpException('User already exists', 400);
     }
     registerDto.password = await bcrypt.hash(registerDto.password, 10);
+
+    // send welcome email after register is completed
+    setImmediate(async () => {
+      await this.mailerService.sendMail({
+        text: 'welcome to our website',
+        subject: 'welcome',
+        to: registerDto.email,
+        template: 'welcome.html',
+        context: {
+          name: registerDto.first_name,
+          family: registerDto.last_name,
+        },
+      });
+    });
     return await this.usersService.createUser(registerDto);
   }
 
