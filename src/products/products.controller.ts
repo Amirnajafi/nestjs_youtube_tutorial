@@ -16,13 +16,37 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from 'src/jwt-auth.guard';
 import userGuard from 'src/users/dto/userGuards';
 import { I18n, I18nContext } from 'nestjs-i18n';
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ProductForBiddenRespnonse } from './dto/forbidden.dto';
 
 @Controller('products')
+@ApiTags('Products')
+@ApiBearerAuth()
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden.',
+    type: ProductForBiddenRespnonse,
+  })
+  @ApiResponse({ status: 201, description: 'Created', type: CreateProductDto })
+  @ApiHeader({
+    name: 'Lang',
+    description: 'send preferred language',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The id of the product',
+  })
   create(@Body() createProductDto: CreateProductDto, @Request() request) {
     const user: userGuard = request.user;
     createProductDto.user = user;
